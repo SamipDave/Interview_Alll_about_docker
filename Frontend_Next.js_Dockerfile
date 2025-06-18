@@ -1,0 +1,73 @@
+Now let’s handle Next.js, which is different from previous frontend frameworks because:
+
+🧠 It supports Server-Side Rendering (SSR), API routes, and sometimes Edge Functions—so it needs to run as a live Node.js server.
+##############################################
+📁 Assumed Next.js Project Structure
+
+.
+├── Dockerfile
+├── package.json
+├── next.config.js
+├── public/
+├── pages/ or app/
+└── ...
+##############################################
+
+# -------- STAGE 1: Build --------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+# Install dependencies
+COPY --chown=app:app package*.json ./
+RUN npm ci
+
+# Copy source files
+COPY --chown=app:app . .
+
+# Build the app
+RUN npm run build
+
+# -------- STAGE 2: Production Runner --------
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+# Install only production deps
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built app and other needed files
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# If using custom server (optional)
+# COPY server.js ./
+
+EXPOSE 3000
+
+# Healthcheck (adjust path if needed)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+CMD ["npm", "start"]
+
+>><<
+npm start must be defined in your package.json as:
+
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+}
+##########################################################################
