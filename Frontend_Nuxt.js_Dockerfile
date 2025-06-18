@@ -1,0 +1,139 @@
+🔍 What is Nuxt.js?
+Nuxt is a powerful Vue framework for building:
+
+*Server-Side Rendered (SSR) apps
+
+*Static sites (via nuxt generate)
+
+*Hybrid apps (some pages SSR, some static)
+
+*API routes, middleware, and more
+
+So like Next.js, Nuxt needs a live Node.js server in SSR mode.
+
+
+
+🔧 Build Tool Used by Nuxt
+Nuxt 3 uses Vite or Webpack under the hood (defaults to Vite).
+The CLI command to build and start is:
+
+# Build (for production)
+npx nuxi build
+
+# Start SSR server
+npx nuxi preview
+
+
+
+📁 Nuxt 3 Project Directory Structure (Before Build)
+
+my-nuxt-app/
+├── app.vue                 # Root Vue component (like App.vue)
+├── nuxt.config.ts         # Main Nuxt configuration
+├── package.json
+├── tsconfig.json          # TypeScript support (optional)
+├── public/                # Static files served as-is
+├── assets/                # Unprocessed assets (SCSS, images, etc.)
+├── components/            # Vue components (auto-imported)
+├── composables/           # Reusable logic (like useFetch)
+├── layouts/               # App layout wrappers
+├── pages/                 # Route-based views (auto-routed)
+├── middleware/            # Route guards and middlewares
+├── plugins/               # Vue/JS plugins (e.g. axios, toast)
+├── server/                # Server API routes or middleware
+│   ├── api/               # API endpoints (`/api/*`)
+│   └── middleware/        # Server middleware
+├── utils/                 # Custom utilities (optional)
+├── .env                   # Environment variables (optional)
+├── .output/               # (Created after build)
+└── node_modules/
+
+
+
+🐳 Dockerfile: Production-Ready Nuxt.js App (SSR, Secure, Multi-Stage)
+
+# -------- STAGE 1: Build --------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+# Install dependencies
+COPY --chown=app:app package*.json ./
+RUN npm ci
+
+# Copy the rest of the code
+COPY --chown=app:app . .
+
+# Build the Nuxt app
+RUN npm run build
+
+# -------- STAGE 2: Run the built app --------
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Create same non-root user in runtime
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+# Install only production deps
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built files and runtime dependencies
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/node_modules ./node_modules
+
+# Expose Nuxt's default port
+EXPOSE 3000
+
+# Healthcheck (basic ping)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Start Nuxt in production mode
+CMD ["node", ".output/server/index.mjs"]
+
+
+################################################################
+
+✅ Best Practices Covered
+| Standard                 | Used? | Notes                      |
+| ------------------------ | ----- | -------------------------- |
+| **Multi-stage build**    | ✅     | Node builder + lean runner |
+| **Non-root user**        | ✅     | `app` user in both stages  |
+| **Production-only deps** | ✅     | Uses `--omit=dev`          |
+| **Healthcheck**          | ✅     | Basic HTTP ping            |
+| **Secure image**         | ✅     | Alpine-based Node          |
+
+##################################################################
+
+📁 Nuxt Output Structure After Build
+After npm run build, Nuxt creates:
+
+.output/
+├── public/
+├── server/
+│   └── index.mjs  ← Entry point for SSR server
+├── ...
+
+* So in runtime we just run:
+node .output/server/index.mjs
+
+
+###################################################################
+
+🧠 What Happens at Build Time (npm run build)
+Nuxt compiles everything into .output/
+
+Inside .output/ you’ll find:
+
+public/: your static assets
+
+server/: Node-based SSR server code
+
+dist/: compiled Vue components
