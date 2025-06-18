@@ -1,3 +1,30 @@
+#most widely used frontend languages are
+
+🔥 Popular Frontend Languages & Frameworks (2025)
+React (JavaScript/TypeScript)
+
+Angular (TypeScript)
+
+Vue.js (JavaScript/TypeScript)
+
+Next.js (React Framework)
+
+Nuxt.js (Vue Framework)
+
+Svelte / SvelteKit
+
+Qwik
+
+Astro
+
+SolidJS
+
+Preact
+
+Vanilla JS + HTML/CSS (Static Sites)
+
+########################################################################################################
+
 # Interview_Alll_about_docker
 Q-1) why in all docker file we are using base image as node can we take any other ?
 Answer-
