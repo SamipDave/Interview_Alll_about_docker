@@ -1,6 +1,8 @@
 #most widely used frontend languages are
 
 🔥 Popular Frontend Languages & Frameworks (2025)
+
+
 React (JavaScript/TypeScript)
 
 Angular (TypeScript)
